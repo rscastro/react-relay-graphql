@@ -3,26 +3,30 @@
 /* eslint-env es6 */
 var React = require('react')
 var Relay = require('react-relay')
-console.log(React)
 
 // ConferenceApp is our top-level component
 class ConferenceApp extends React.Component {
-  getInitialState() {
-    return {
+  constructor(props, context){
+    super(props, context);
+    this.state = {
       userNum: 1
     }
   }
 
-
-
   render() {
-    console.log('render', this.props)
+    console.log('yow',this.props)
+
     return(
       <div className="container">
         <h2>{this.props.user.name} Conferences</h2>
         <button onClick={ this.loadMore.bind(this) }>CHANGE USER</button>
-        {this.props.user.conferences.edges.map(edge =>
-          <Conference edge={edge} />
+        {this.props.user.conferences.edges.map((edge, i) => {
+          edge.key = i;
+          return (
+            <Conference edge={edge}/>
+          )
+        }
+
         )}
       </div>
     )
@@ -30,7 +34,6 @@ class ConferenceApp extends React.Component {
 
   loadMore() {
     const count = this.props.relay.variables.userToShow;
-
     this.props.relay.setVariables({userToShow: count + 1});
   }
 }
@@ -65,7 +68,7 @@ exports.Container = Relay.createContainer(ConferenceApp, {
     // our component
     user: () => Relay.QL`
       fragment on User {
-        name,
+        name(userToShow: $userToShow),
         conferences(userToShow: $userToShow) {
           edges {
             node {

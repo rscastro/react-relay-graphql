@@ -22,8 +22,8 @@ function Conference(id, frameworkId, name, description, attendees) {
 // You can also return promises for async fetching
 
 var users = [
-  new User(1, 'Ryan'),
-  new User(2, 'George')
+  new User(1, 'Jared'),
+  new User(2, 'Derek')
 ];
 
 var frameworks = [

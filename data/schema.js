@@ -54,6 +54,12 @@ var userType = new GraphQL.GraphQLObjectType({
       name: {
         type: GraphQL.GraphQLString,
         description: 'The name of the user',
+        args: {
+          userToShow: { type: GraphQL.GraphQLInt }
+        },
+        resolve: function(user, args) {
+          return db.getUser(args.userToShow) && db.getUser(args.userToShow).name
+        },
       },
 
       // We can set up a relationship between users and conferences here
