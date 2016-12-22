@@ -40,7 +40,7 @@
               "deprecationReason": null
             },
             {
-              "name": "viewer",
+              "name": "user",
               "description": null,
               "args": [],
               "type": {
@@ -100,7 +100,7 @@
             },
             {
               "kind": "OBJECT",
-              "name": "Widget",
+              "name": "Conference",
               "ofType": null
             }
           ]
@@ -127,41 +127,23 @@
               "deprecationReason": null
             },
             {
-              "name": "widgets",
-              "description": "A person's collection of widgets",
+              "name": "name",
+              "description": "The name of the user",
+              "args": [],
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "conferences",
+              "description": "A listing of the user's conferences",
               "args": [
                 {
-                  "name": "after",
-                  "description": null,
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  },
-                  "defaultValue": null
-                },
-                {
-                  "name": "first",
-                  "description": null,
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  },
-                  "defaultValue": null
-                },
-                {
-                  "name": "before",
-                  "description": null,
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  },
-                  "defaultValue": null
-                },
-                {
-                  "name": "last",
+                  "name": "userToShow",
                   "description": null,
                   "type": {
                     "kind": "SCALAR",
@@ -173,7 +155,7 @@
               ],
               "type": {
                 "kind": "OBJECT",
-                "name": "WidgetConnection",
+                "name": "ConferenceConnection",
                 "ofType": null
               },
               "isDeprecated": false,
@@ -213,7 +195,7 @@
         },
         {
           "kind": "OBJECT",
-          "name": "WidgetConnection",
+          "name": "ConferenceConnection",
           "description": "A connection to a list of items.",
           "fields": [
             {
@@ -241,7 +223,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "WidgetEdge",
+                  "name": "ConferenceEdge",
                   "ofType": null
                 }
               },
@@ -333,7 +315,7 @@
         },
         {
           "kind": "OBJECT",
-          "name": "WidgetEdge",
+          "name": "ConferenceEdge",
           "description": "An edge in a connection.",
           "fields": [
             {
@@ -342,7 +324,7 @@
               "args": [],
               "type": {
                 "kind": "OBJECT",
-                "name": "Widget",
+                "name": "Conference",
                 "ofType": null
               },
               "isDeprecated": false,
@@ -372,8 +354,8 @@
         },
         {
           "kind": "OBJECT",
-          "name": "Widget",
-          "description": "A shiny widget",
+          "name": "Conference",
+          "description": "A conference",
           "fields": [
             {
               "name": "id",
@@ -393,7 +375,19 @@
             },
             {
               "name": "name",
-              "description": "The name of the widget",
+              "description": "The name of the conference",
+              "args": [],
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "description",
+              "description": "The description of the conference",
               "args": [],
               "type": {
                 "kind": "SCALAR",

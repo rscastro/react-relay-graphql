@@ -9,7 +9,7 @@ import Relay from 'react-relay';
 ReactDOM.render(
   <Relay.Renderer
     environment={Relay.Store}
-    Container={App}
+    Container={App.Container}
     queryConfig={new AppHomeRoute()}
   />,
   document.getElementById('root')

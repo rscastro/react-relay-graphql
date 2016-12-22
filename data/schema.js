@@ -1,143 +1,102 @@
-/**
- *  Copyright (c) 2015, Facebook, Inc.
- *  All rights reserved.
- *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
- */
+var GraphQL = require('graphql')
+var GraphQLRelay = require('graphql-relay')
+var db = require('./database')
 
-import {
-  GraphQLBoolean,
-  GraphQLFloat,
-  GraphQLID,
-  GraphQLInt,
-  GraphQLList,
-  GraphQLNonNull,
-  GraphQLObjectType,
-  GraphQLSchema,
-  GraphQLString,
-} from 'graphql';
+// The schema describes the types and queries for our data and
+// is the spot to register them
 
-import {
-  connectionArgs,
-  connectionDefinitions,
-  connectionFromArray,
-  fromGlobalId,
-  globalIdField,
-  mutationWithClientMutationId,
-  nodeDefinitions,
-} from 'graphql-relay';
+// We need to set up our node definitions to provide a node interface.
+// Relay uses global ids for entities
 
-import {
-  // Import methods that your schema can use to interact with your database
-  User,
-  Widget,
-  getUser,
-  getViewer,
-  getWidget,
-  getWidgets,
-} from './database';
+var nodeDefinitions = GraphQLRelay.nodeDefinitions(function(globalId) {
+  var idInfo = GraphQLRelay.fromGlobalId(globalId)
+  if (idInfo.type == 'User') {
+    return db.getUser(idInfo.id)
+  } else if(idInfo == 'Conference') {
+    return db.getConference(idInfo.id)
+  }
+  return null;
+});
 
-/**
- * We get the node interface and field from the Relay library.
- *
- * The first method defines the way we resolve an ID to its object.
- * The second defines the way we resolve an object to its GraphQL type.
- */
-var {nodeInterface, nodeField} = nodeDefinitions(
-  (globalId) => {
-    var {type, id} = fromGlobalId(globalId);
-    if (type === 'User') {
-      return getUser(id);
-    } else if (type === 'Widget') {
-      return getWidget(id);
-    } else {
-      return null;
+// We can now use the Node interface in the GraphQL types of our schema
+
+var conferenceType = new GraphQL.GraphQLObjectType({
+  name: 'Conference',
+  description: 'A conference',
+
+  // Relay will use this function to determine if an object in your system is
+  // of a particular GraphQL type
+  isTypeOf: function(obj) { return obj instanceof db.Conference },
+
+  fields: {
+    id: GraphQLRelay.globalIdField('Conference'),
+    name: {
+      type: GraphQL.GraphQLString,
+      description: 'The name of the conference',
+    },
+    description: {
+      type: GraphQL.GraphQLString,
+      description: 'The description of the conference'
     }
   },
-  (obj) => {
-    if (obj instanceof User) {
-      return userType;
-    } else if (obj instanceof Widget)  {
-      return widgetType;
-    } else {
-      return null;
-    }
-  }
-);
+  // This declares this GraphQL type as a Node
+  interfaces: [nodeDefinitions.nodeInterface],
+});
 
-/**
- * Define your own types here
- */
-
-var userType = new GraphQLObjectType({
+var userType = new GraphQL.GraphQLObjectType({
   name: 'User',
   description: 'A person who uses our app',
-  fields: () => ({
-    id: globalIdField('User'),
-    widgets: {
-      type: widgetConnection,
-      description: 'A person\'s collection of widgets',
-      args: connectionArgs,
-      resolve: (_, args) => connectionFromArray(getWidgets(), args),
+  isTypeOf: function(obj) { return obj instanceof db.User },
+
+  fields: function() {
+    return {
+      id: GraphQLRelay.globalIdField('User'),
+      name: {
+        type: GraphQL.GraphQLString,
+        description: 'The name of the user',
+      },
+
+      // We can set up a relationship between users and conferences here
+      conferences: {
+        description: 'A listing of the user\'s conferences',
+
+        // Relay gives us helper functions to define the Connection and its args
+        type: GraphQLRelay.connectionDefinitions({name: 'Conference', nodeType: conferenceType}).connectionType,
+
+        // argument to tell GraphQL which user to pass back
+        // in the resolve block
+        args: {
+          userToShow: { type: GraphQL.GraphQLInt }
+        },
+
+        // The resolve block will complete a query and pass back
+        // data for the user id supplied by the arguments we pass in
+        resolve: function(user, args) {
+          return GraphQLRelay.connectionFromArray(db.getConferencesByUser(args.userToShow), args)
+        },
+      },
+    }
+  },
+  interfaces: [nodeDefinitions.nodeInterface],
+});
+
+// Now we can bundle our types up and export a schema
+// GraphQL expects a set of top-level queries and optional mutations (we have
+// none in this simple example so we leave the mutation field out)
+// Types and queries are exported with GraphQLSchema
+export var Schema = new GraphQL.GraphQLSchema({
+  query: new GraphQL.GraphQLObjectType({
+    name: 'Query',
+    fields: {
+      // Relay needs this to query Nodes using global IDs
+      node: nodeDefinitions.nodeField,
+      // Root queries
+      user: {
+        type: userType,
+        resolve: function() {
+          return db.getUser(1)
+        },
+      },
     },
   }),
-  interfaces: [nodeInterface],
-});
-
-var widgetType = new GraphQLObjectType({
-  name: 'Widget',
-  description: 'A shiny widget',
-  fields: () => ({
-    id: globalIdField('Widget'),
-    name: {
-      type: GraphQLString,
-      description: 'The name of the widget',
-    },
-  }),
-  interfaces: [nodeInterface],
-});
-
-/**
- * Define your own connection types here
- */
-var {connectionType: widgetConnection} =
-  connectionDefinitions({name: 'Widget', nodeType: widgetType});
-
-/**
- * This is the type that will be the root of our query,
- * and the entry point into our schema.
- */
-var queryType = new GraphQLObjectType({
-  name: 'Query',
-  fields: () => ({
-    node: nodeField,
-    // Add your own root fields here
-    viewer: {
-      type: userType,
-      resolve: () => getViewer(),
-    },
-  }),
-});
-
-/**
- * This is the type that will be the root of our mutations,
- * and the entry point into performing writes in our schema.
- */
-var mutationType = new GraphQLObjectType({
-  name: 'Mutation',
-  fields: () => ({
-    // Add your own mutations here
-  })
-});
-
-/**
- * Finally, we construct our schema (whose starting query type is the query
- * type we defined above) and export it.
- */
-export var Schema = new GraphQLSchema({
-  query: queryType,
-  // Uncomment the following after adding some mutation fields:
-  // mutation: mutationType
 });
